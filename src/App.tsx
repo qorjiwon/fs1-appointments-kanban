@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Appointment } from './types';
 import { useFilters } from './hooks/useFilters';
 import { useAppointments } from './hooks/useAppointments';
-import { useSSE } from './hooks/useSSE';
+import { useWebSocket } from './hooks/useWebSocket';
 import { useToast } from './hooks/useToast';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { FilterBar } from './components/FilterBar';
@@ -23,7 +23,7 @@ export default function App() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
-  const onSSEEvent = useCallback(
+  const onRealtimeEvent = useCallback(
     (type: string, appointment: Appointment) => {
       handleSSEEvent(type, appointment);
       if (selectedAppointment?.id === appointment.id) {
@@ -33,7 +33,7 @@ export default function App() {
     [handleSSEEvent, selectedAppointment?.id]
   );
 
-  const { status: sseStatus } = useSSE(onSSEEvent);
+  const { status: sseStatus } = useWebSocket(onRealtimeEvent);
 
   const handleTransition = useCallback(
     (updated: Appointment) => {
