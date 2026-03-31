@@ -6,6 +6,7 @@ import {
   PutCommand,
   GetCommand,
   QueryCommand,
+  ScanCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { Appointment, AppointmentStatus, TransitionRecord } from '../models/appointment';
@@ -105,12 +106,8 @@ export async function listAppointmentsDdb(query: ListAppointmentsQuery): Promise
 
   // 상태가 없거나 여러 개인 경우: 단순 스캔 (테이크홈 수준에선 허용)
   const res = await ddb.send(
-    new QueryCommand({
+    new ScanCommand({
       TableName: TABLE,
-      IndexName: STATUS_INDEX,
-      KeyConditionExpression: '#status <> :x',
-      ExpressionAttributeNames: { '#status': 'status' },
-      ExpressionAttributeValues: { ':x': '___never___' },
     })
   );
 
