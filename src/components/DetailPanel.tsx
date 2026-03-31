@@ -43,7 +43,13 @@ export function DetailPanel({ appointment, onClose, onTransition, onError }: Det
       onTransition(updated);
     } catch (err: unknown) {
       const error = err as Error & { body?: { error?: string; allowed_transitions?: string[] } };
-      const msg = error.body?.error || error.message || '상태 변경에 실패했습니다';
+      const allowedTransitions = error.body?.allowed_transitions;
+      const msg =
+        allowedTransitions && allowedTransitions.length > 0
+          ? `이 상태에서는 [${allowedTransitions
+              .map((s) => STATUS_LABELS[s as AppointmentStatus] ?? s)
+              .join(', ')}]로만 전이 가능합니다.`
+          : error.body?.error || error.message || '상태 변경에 실패했습니다';
       onError(msg);
     } finally {
       setTransitioning(null);

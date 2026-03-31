@@ -17,8 +17,9 @@ export function useAppointments(filters: Filters) {
         from?: string;
         to?: string;
         q?: string;
+        page?: number;
         limit?: number;
-      } = { limit: 200 };
+      } = { page: 1, limit: 200 };
 
       if (filters.status.length > 0) params.status = filters.status;
       if (filters.from) params.from = filters.from;
