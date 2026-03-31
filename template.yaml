@@ -70,6 +70,8 @@ Resources:
 
   AppointmentsFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       FunctionName: inspline-appointments
       CodeUri: .
@@ -105,6 +107,8 @@ Resources:
 
   SeedAppointmentsFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       FunctionName: inspline-seed-appointments
       CodeUri: .
@@ -115,6 +119,8 @@ Resources:
 
   WebSocketConnectFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       FunctionName: inspline-ws-connect
       CodeUri: .
@@ -125,6 +131,8 @@ Resources:
 
   WebSocketDisconnectFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       FunctionName: inspline-ws-disconnect
       CodeUri: .
