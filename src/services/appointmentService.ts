@@ -1,7 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Appointment, AppointmentStatus, TransitionRecord } from '../models/appointment';
 import { isTransitionAllowed, getAllowedTransitions } from './stateMachine';
-import { broadcaster } from '../sse/broadcaster';
 
 const appointments = new Map<string, Appointment>();
 
@@ -33,7 +32,6 @@ export function createAppointment(input: CreateAppointmentInput): Appointment {
     updated_at: now,
   };
   appointments.set(appointment.id, appointment);
-  broadcaster.broadcast('appointment_created', appointment);
   return appointment;
 }
 
@@ -151,6 +149,5 @@ export function transitionAppointment(
   appointment.transition_history.push(record);
   appointment.updated_at = new Date().toISOString();
 
-  broadcaster.broadcast('appointment_updated', appointment);
   return { success: true, appointment };
 }
