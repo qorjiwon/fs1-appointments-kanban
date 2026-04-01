@@ -32,7 +32,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 export interface CreateAppointmentInput {
   patient_name: string;
-  clinic_id: string;
   datetime: string;
   treatment_type: string;
 }

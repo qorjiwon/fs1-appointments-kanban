@@ -17,7 +17,6 @@ export interface Appointment {
   id: string;
   appointment_id?: string;
   patient_name: string;
-  clinic_id: string;
   datetime: string;
   treatment_type: string;
   status: AppointmentStatus;
