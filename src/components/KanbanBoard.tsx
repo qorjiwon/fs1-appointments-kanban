@@ -1,13 +1,18 @@
 import React from 'react';
-import { Appointment, KANBAN_STATUSES } from '../types';
+import { Appointment, AppointmentStatus, KANBAN_STATUSES } from '../types';
 import { KanbanColumn } from './KanbanColumn';
 
 interface KanbanBoardProps {
   appointments: Appointment[];
+  visibleStatuses?: AppointmentStatus[];
   onCardClick: (appointment: Appointment) => void;
 }
 
-export function KanbanBoard({ appointments, onCardClick }: KanbanBoardProps) {
+export function KanbanBoard({ appointments, visibleStatuses, onCardClick }: KanbanBoardProps) {
+  const statusesToShow = visibleStatuses && visibleStatuses.length > 0
+    ? KANBAN_STATUSES.filter((status) => visibleStatuses.includes(status))
+    : KANBAN_STATUSES;
+
   const grouped = KANBAN_STATUSES.reduce(
     (acc, status) => {
       acc[status] = appointments.filter((a) => a.status === status);
@@ -18,7 +23,7 @@ export function KanbanBoard({ appointments, onCardClick }: KanbanBoardProps) {
 
   return (
     <div className="kanban-board">
-      {KANBAN_STATUSES.map((status) => (
+      {statusesToShow.map((status) => (
         <KanbanColumn
           key={status}
           status={status}
