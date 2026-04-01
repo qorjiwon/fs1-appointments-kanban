@@ -127,12 +127,17 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
 
       const result = await transitionAppointmentDdb(id, target, body.changed_by ?? 'admin');
       if (!result.success) {
-        const statusCode = result.error === 'Appointment not found' ? 404 : 400;
+        const statusCode = result.error === 'Appointment not found'
+          ? 404
+          : result.conflict
+            ? 409
+            : 400;
         return {
           statusCode,
           body: JSON.stringify({
             error: result.error,
             allowed_transitions: result.allowed_transitions,
+            latest_appointment: result.latest_appointment,
           }),
         };
       }

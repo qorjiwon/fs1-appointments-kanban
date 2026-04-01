@@ -49,6 +49,7 @@ export async function createAppointmentDdb(input: CreateAppointmentInput, id: st
     treatment_type: input.treatment_type,
     status: 'requested',
     transition_history: [],
+    version: 0,
     created_at: now,
     updated_at: now,
   };
@@ -162,6 +163,8 @@ export interface TransitionResult {
   appointment?: Appointment;
   error?: string;
   allowed_transitions?: AppointmentStatus[];
+  conflict?: boolean;
+  latest_appointment?: Appointment;
 }
 
 export async function transitionAppointmentDdb(
@@ -190,31 +193,50 @@ export async function transitionAppointmentDdb(
     changed_by: changedBy,
   };
 
-  const updatedHistory = [...(current.transition_history ?? []), record];
   const updatedAt = new Date().toISOString();
+  const expectedVersion = current.version ?? 0;
 
-  const res = await ddb.send(
-    new UpdateCommand({
-      TableName: TABLE,
-      Key: { id },
-      UpdateExpression:
-        'SET #status = :s, #updated_at = :u, #history = list_append(if_not_exists(#history, :empty), :rec)',
-      ExpressionAttributeNames: {
-        '#status': 'status',
-        '#updated_at': 'updated_at',
-        '#history': 'transition_history',
-      },
-      ExpressionAttributeValues: {
-        ':s': targetStatus,
-        ':u': updatedAt,
-        ':rec': [record],
-        ':empty': [],
-      },
-      ReturnValues: 'ALL_NEW',
-    })
-  );
+  try {
+    const res = await ddb.send(
+      new UpdateCommand({
+        TableName: TABLE,
+        Key: { id },
+        UpdateExpression:
+          'SET #status = :s, #updated_at = :u, #history = list_append(if_not_exists(#history, :empty), :rec), #version = if_not_exists(#version, :zero) + :inc',
+        ConditionExpression:
+          'attribute_exists(id) AND ((attribute_not_exists(#version) AND :expectedVersion = :zero) OR #version = :expectedVersion)',
+        ExpressionAttributeNames: {
+          '#status': 'status',
+          '#updated_at': 'updated_at',
+          '#history': 'transition_history',
+          '#version': 'version',
+        },
+        ExpressionAttributeValues: {
+          ':s': targetStatus,
+          ':u': updatedAt,
+          ':rec': [record],
+          ':empty': [],
+          ':expectedVersion': expectedVersion,
+          ':zero': 0,
+          ':inc': 1,
+        },
+        ReturnValues: 'ALL_NEW',
+      })
+    );
 
-  const updated = res.Attributes as Appointment;
-  return { success: true, appointment: updated };
+    const updated = res.Attributes as Appointment;
+    return { success: true, appointment: updated };
+  } catch (err: any) {
+    if (err?.name === 'ConditionalCheckFailedException') {
+      const latest = await getAppointmentDdb(id);
+      return {
+        success: false,
+        conflict: true,
+        error: '이미 다른 요청이 상태를 변경했습니다. 최신 상태를 다시 조회하세요.',
+        latest_appointment: latest,
+      };
+    }
+    throw err;
+  }
 }
 

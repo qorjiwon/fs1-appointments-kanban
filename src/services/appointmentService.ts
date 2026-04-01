@@ -28,6 +28,7 @@ export function createAppointment(input: CreateAppointmentInput): Appointment {
     treatment_type: input.treatment_type,
     status: 'requested',
     transition_history: [],
+    version: 0,
     created_at: now,
     updated_at: now,
   };
@@ -147,6 +148,7 @@ export function transitionAppointment(
 
   appointment.status = targetStatus;
   appointment.transition_history.push(record);
+  appointment.version += 1;
   appointment.updated_at = new Date().toISOString();
 
   return { success: true, appointment };
