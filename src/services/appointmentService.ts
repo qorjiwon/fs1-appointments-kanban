@@ -7,7 +7,6 @@ const appointments = new Map<string, Appointment>();
 
 export interface CreateAppointmentInput {
   patient_name: string;
-  clinic_id: string;
   datetime: string;
   treatment_type: string;
 }
@@ -26,7 +25,6 @@ export function createAppointment(input: CreateAppointmentInput): Appointment {
   const appointment: Appointment = {
     id: uuidv4(),
     patient_name: input.patient_name,
-    clinic_id: input.clinic_id,
     datetime: input.datetime,
     treatment_type: input.treatment_type,
     status: 'requested',
@@ -111,7 +109,6 @@ export function seedAppointments(): void {
   for (const seed of seeds) {
     const apt = createAppointment({
       patient_name: seed.patient_name,
-      clinic_id: 'clinic-1',
       datetime: seed.datetime,
       treatment_type: seed.treatment_type,
     });

@@ -20,7 +20,6 @@ const STATUS_INDEX = process.env.APPOINTMENTS_STATUS_INDEX ?? 'status-datetime-i
 
 export interface CreateAppointmentInput {
   patient_name: string;
-  clinic_id: string;
   datetime: string;
   treatment_type: string;
 }
@@ -46,7 +45,6 @@ export async function createAppointmentDdb(input: CreateAppointmentInput, id: st
   const item: Appointment = {
     id,
     patient_name: input.patient_name,
-    clinic_id: input.clinic_id,
     datetime: input.datetime,
     treatment_type: input.treatment_type,
     status: 'requested',

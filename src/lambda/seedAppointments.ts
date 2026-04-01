@@ -25,7 +25,7 @@ export const handler: APIGatewayProxyHandlerV2 = async () => {
   for (const seed of seeds) {
     const id = uuidv4();
     const apt = await createAppointmentDdb(
-      { patient_name: seed.patient_name, clinic_id: 'clinic-1', datetime: seed.datetime, treatment_type: seed.treatment_type },
+      { patient_name: seed.patient_name, datetime: seed.datetime, treatment_type: seed.treatment_type },
       id
     );
     for (const status of seed.steps) {

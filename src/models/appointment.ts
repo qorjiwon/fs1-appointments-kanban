@@ -16,7 +16,6 @@ export interface TransitionRecord {
 export interface Appointment {
   id: string;
   patient_name: string;
-  clinic_id: string;
   datetime: string;
   treatment_type: string;
   status: AppointmentStatus;

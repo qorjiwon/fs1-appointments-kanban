@@ -14,16 +14,16 @@ const VALID_STATUSES: AppointmentStatus[] = [
 ];
 
 router.post('/', (req: Request, res: Response) => {
-  const { patient_name, clinic_id, datetime, treatment_type } = req.body;
+  const { patient_name, datetime, treatment_type } = req.body;
 
-  if (!patient_name || !clinic_id || !datetime || !treatment_type) {
+  if (!patient_name || !datetime || !treatment_type) {
     res.status(400).json({
-      error: 'Missing required fields: patient_name, clinic_id, datetime, treatment_type',
+      error: 'Missing required fields: patient_name, datetime, treatment_type',
     });
     return;
   }
 
-  const appointment = createAppointment({ patient_name, clinic_id, datetime, treatment_type });
+  const appointment = createAppointment({ patient_name, datetime, treatment_type });
   res.status(201).json({ appointment_id: appointment.id, ...appointment });
 });
 

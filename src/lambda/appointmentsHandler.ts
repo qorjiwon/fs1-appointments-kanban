@@ -40,24 +40,23 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       }
       const body = JSON.parse(event.body) as {
         patient_name?: string;
-        clinic_id?: string;
         datetime?: string;
         treatment_type?: string;
       };
 
-      const { patient_name, clinic_id, datetime, treatment_type } = body;
-      if (!patient_name || !clinic_id || !datetime || !treatment_type) {
+      const { patient_name, datetime, treatment_type } = body;
+      if (!patient_name || !datetime || !treatment_type) {
         return {
           statusCode: 400,
           body: JSON.stringify({
-            error: 'Missing required fields: patient_name, clinic_id, datetime, treatment_type',
+            error: 'Missing required fields: patient_name, datetime, treatment_type',
           }),
         };
       }
 
       const id = uuidv4();
       const appointment = await createAppointmentDdb(
-        { patient_name, clinic_id, datetime, treatment_type },
+        { patient_name, datetime, treatment_type },
         id
       );
 
