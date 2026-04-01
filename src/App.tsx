@@ -91,7 +91,11 @@ export default function App() {
         ) : appointments.length === 0 ? (
           <EmptyState hasFilters={hasActiveFilters} />
         ) : (
-          <KanbanBoard appointments={appointments} onCardClick={handleCardClick} />
+          <KanbanBoard
+            appointments={appointments}
+            visibleStatuses={filters.status}
+            onCardClick={handleCardClick}
+          />
         )}
       </main>
 
