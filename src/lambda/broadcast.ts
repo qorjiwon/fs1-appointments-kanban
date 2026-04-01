@@ -40,3 +40,15 @@ export async function broadcastAppointmentEvent(
   );
 }
 
+/** HTTP 핸들러용: 예약 저장/갱신은 이미 성공한 뒤 호출하며, 브로드캐스트 실패는 로그만 남기고 전파하지 않음 */
+export async function broadcastAppointmentEventSafe(
+  type: 'appointment_created' | 'appointment_updated',
+  appointment: Appointment
+): Promise<void> {
+  try {
+    await broadcastAppointmentEvent(type, appointment);
+  } catch (err) {
+    console.error('broadcastAppointmentEvent failed (appointment already persisted)', err);
+  }
+}
+

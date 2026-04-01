@@ -7,7 +7,7 @@ import {
   transitionAppointmentDdb,
 } from '../dynamo/appointmentRepository';
 import { AppointmentStatus } from '../models/appointment';
-import { broadcastAppointmentEvent } from './broadcast';
+import { broadcastAppointmentEventSafe } from './broadcast';
 
 function normalizeHttpPath(event: Parameters<APIGatewayProxyHandlerV2>[0]): string {
   const raw = event.rawPath ?? event.requestContext.http.path;
@@ -60,7 +60,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         id
       );
 
-      await broadcastAppointmentEvent('appointment_created', appointment);
+      await broadcastAppointmentEventSafe('appointment_created', appointment);
 
       return {
         statusCode: 201,
@@ -134,7 +134,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         };
       }
 
-      await broadcastAppointmentEvent('appointment_updated', result.appointment!);
+      await broadcastAppointmentEventSafe('appointment_updated', result.appointment!);
 
       return { statusCode: 200, body: JSON.stringify(result.appointment) };
     }

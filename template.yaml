@@ -79,6 +79,13 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref AppointmentsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ConnectionsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - execute-api:ManageConnections
+              Resource: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/prod/POST/@connections/*'
       Events:
         PostAppointments:
           Type: HttpApi
