@@ -1,10 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Appointment } from './types';
 import { useFilters } from './hooks/useFilters';
 import { useAppointments } from './hooks/useAppointments';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useToast } from './hooks/useToast';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
+import { API_ERROR_EVENT } from './services/api';
 import { FilterBar } from './components/FilterBar';
 import { KanbanBoard } from './components/KanbanBoard';
 import { DetailPanel } from './components/DetailPanel';
@@ -22,6 +23,16 @@ export default function App() {
 
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const customEvent = event as CustomEvent<{ message?: string }>;
+      const message = customEvent.detail?.message || 'API 요청에 실패했습니다';
+      addToast(`API 요청 실패: ${message}`, 'error');
+    };
+    window.addEventListener(API_ERROR_EVENT, handler);
+    return () => window.removeEventListener(API_ERROR_EVENT, handler);
+  }, [addToast]);
 
   const onRealtimeEvent = useCallback(
     (type: string, appointment: Appointment) => {

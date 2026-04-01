@@ -1,33 +1,58 @@
 import { Appointment, AppointmentsResponse, AppointmentStatus } from '../types';
 
 const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '');
+export const API_ERROR_EVENT = 'api:error';
+
+interface RequestOptions extends RequestInit {
+  suppressErrorToast?: boolean;
+}
 
 function buildUrl(path: string): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${API_BASE}${normalizedPath}`;
 }
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(buildUrl(path), {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
+function emitApiError(message: string, suppressErrorToast?: boolean) {
+  if (suppressErrorToast || typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent(API_ERROR_EVENT, {
+      detail: { message },
+    })
+  );
+}
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    const error = new Error(body.error || `HTTP ${res.status}`) as Error & {
-      status: number;
-      body: unknown;
-    };
-    error.status = res.status;
-    error.body = body;
+async function request<T>(path: string, options?: RequestOptions): Promise<T> {
+  try {
+    const res = await fetch(buildUrl(path), {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const message = body.error || `HTTP ${res.status}`;
+      emitApiError(message, options?.suppressErrorToast);
+
+      const error = new Error(message) as Error & {
+        status: number;
+        body: unknown;
+      };
+      error.status = res.status;
+      error.body = body;
+      throw error;
+    }
+
+    return res.json();
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error('네트워크 요청에 실패했습니다');
+    if (!(err instanceof Error && 'status' in err)) {
+      emitApiError(error.message, options?.suppressErrorToast);
+    }
     throw error;
   }
-
-  return res.json();
 }
 
 export interface CreateAppointmentInput {
@@ -41,6 +66,7 @@ export const api = {
     return request('/appointments', {
       method: 'POST',
       body: JSON.stringify(input),
+      suppressErrorToast: true,
     });
   },
 
@@ -78,6 +104,7 @@ export const api = {
     return request(`/appointments/${id}/transition`, {
       method: 'PATCH',
       body: JSON.stringify({ target_status: targetStatus, changed_by: changedBy }),
+      suppressErrorToast: true,
     });
   },
 };
