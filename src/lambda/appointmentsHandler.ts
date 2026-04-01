@@ -70,11 +70,14 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
 
     if (method === 'GET' && path === '/appointments') {
       const q = event.queryStringParameters ?? {};
-      const statusParams = q.status
-        ? Array.isArray(q.status)
-          ? q.status
-          : [q.status]
-        : [];
+      const rawStatusParams = new URLSearchParams(event.rawQueryString ?? '').getAll('status');
+      const statusParams = rawStatusParams.length > 0
+        ? rawStatusParams
+        : q.status
+          ? Array.isArray(q.status)
+            ? q.status
+            : [q.status]
+          : [];
       const statuses = statusParams as AppointmentStatus[];
 
       const result = await listAppointmentsDdb({
