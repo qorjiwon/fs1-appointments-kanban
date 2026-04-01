@@ -30,7 +30,15 @@ export interface ListAppointmentsQuery {
   from?: string;
   to?: string;
   q?: string;
+  page?: number;
   limit?: number;
+}
+
+export interface ListAppointmentsResult {
+  items: Appointment[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export async function createAppointmentDdb(input: CreateAppointmentInput, id: string): Promise<Appointment> {
@@ -67,7 +75,11 @@ export async function getAppointmentDdb(id: string): Promise<Appointment | undef
   return res.Item as Appointment | undefined;
 }
 
-export async function listAppointmentsDdb(query: ListAppointmentsQuery): Promise<Appointment[]> {
+export async function listAppointmentsDdb(query: ListAppointmentsQuery): Promise<ListAppointmentsResult> {
+  const page = query.page && query.page > 0 ? query.page : 1;
+  const limit = query.limit && query.limit > 0 ? query.limit : 200;
+  const start = (page - 1) * limit;
+
   if (query.status && query.status.length === 1) {
     // 단일 상태는 GSI로 조회
     const status = query.status[0];
@@ -101,7 +113,14 @@ export async function listAppointmentsDdb(query: ListAppointmentsQuery): Promise
       const s = query.q.toLowerCase();
       items = items.filter((a) => a.patient_name.toLowerCase().includes(s));
     }
-    return items;
+    items.sort((a, b) => a.datetime.localeCompare(b.datetime));
+    const total = items.length;
+    return {
+      items: items.slice(start, start + limit),
+      total,
+      page,
+      limit,
+    };
   }
 
   // 상태가 없거나 여러 개인 경우: 단순 스캔 (테이크홈 수준에선 허용)
@@ -129,10 +148,13 @@ export async function listAppointmentsDdb(query: ListAppointmentsQuery): Promise
   }
 
   items.sort((a, b) => a.datetime.localeCompare(b.datetime));
-  if (query.limit && items.length > query.limit) {
-    return items.slice(0, query.limit);
-  }
-  return items;
+  const total = items.length;
+  return {
+    items: items.slice(start, start + limit),
+    total,
+    page,
+    limit,
+  };
 }
 
 export interface TransitionResult {

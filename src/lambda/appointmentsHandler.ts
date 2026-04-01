@@ -9,12 +9,32 @@ import {
 import { AppointmentStatus } from '../models/appointment';
 import { broadcastAppointmentEvent } from './broadcast';
 
+function normalizeHttpPath(event: Parameters<APIGatewayProxyHandlerV2>[0]): string {
+  const raw = event.rawPath ?? event.requestContext.http.path;
+  let p = raw.replace(/\/{2,}/g, '/');
+  if (p.length > 1 && p.endsWith('/')) p = p.slice(0, -1);
+
+  // HTTP API는 path에 스테이지가 포함될 수 있음: /prod/appointments
+  const stage = (event.requestContext as { stage?: string }).stage;
+  if (stage && stage !== '$default') {
+    const prefix = `/${stage}`;
+    if (p === prefix || p.startsWith(`${prefix}/`)) {
+      p = p.slice(prefix.length) || '/';
+    }
+  } else if (p === '/prod' || p.startsWith('/prod/')) {
+    // 일부 이벤트에서 stage 필드 없이 path만 /prod/... 로 오는 경우
+    p = p.slice('/prod'.length) || '/';
+  }
+
+  return p;
+}
+
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   const method = event.requestContext.http.method;
-  const rawPath = event.requestContext.http.path;
+  const path = normalizeHttpPath(event);
 
   try {
-    if (method === 'POST' && rawPath === '/appointments') {
+    if (method === 'POST' && path === '/appointments') {
       if (!event.body) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing body' }) };
       }
@@ -49,7 +69,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       };
     }
 
-    if (method === 'GET' && rawPath === '/appointments') {
+    if (method === 'GET' && path === '/appointments') {
       const q = event.queryStringParameters ?? {};
       const statusParams = q.status
         ? Array.isArray(q.status)
@@ -58,30 +78,31 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         : [];
       const statuses = statusParams as AppointmentStatus[];
 
-      const items = await listAppointmentsDdb({
+      const result = await listAppointmentsDdb({
         status: statuses.length > 0 ? statuses : undefined,
         from: q.from,
         to: q.to,
         q: q.q,
+        page: q.page ? Number(q.page) : 1,
         limit: q.limit ? Number(q.limit) : 200,
       });
 
       return {
         statusCode: 200,
         body: JSON.stringify({
-          data: items,
+          data: result.items,
           pagination: {
-            page: 1,
-            limit: items.length,
-            total: items.length,
-            totalPages: 1,
+            page: result.page,
+            limit: result.limit,
+            total: result.total,
+            totalPages: Math.max(1, Math.ceil(result.total / result.limit)),
           },
         }),
       };
     }
 
-    if (method === 'GET' && rawPath.startsWith('/appointments/')) {
-      const id = rawPath.split('/')[2];
+    if (method === 'GET' && path.startsWith('/appointments/')) {
+      const id = path.split('/')[2];
       const apt = await getAppointmentDdb(id);
       if (!apt) {
         return { statusCode: 404, body: JSON.stringify({ error: 'Appointment not found' }) };
@@ -89,8 +110,8 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       return { statusCode: 200, body: JSON.stringify(apt) };
     }
 
-    if (method === 'PATCH' && rawPath.startsWith('/appointments/') && rawPath.endsWith('/transition')) {
-      const parts = rawPath.split('/');
+    if (method === 'PATCH' && path.startsWith('/appointments/') && path.endsWith('/transition')) {
+      const parts = path.split('/');
       const id = parts[2];
 
       if (!event.body) {
