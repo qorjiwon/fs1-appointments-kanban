@@ -90,19 +90,21 @@ export async function listAppointmentsDdb(query: ListAppointmentsQuery): Promise
     };
 
     if (query.from || query.to) {
-      const parts: string[] = ['#status = :s'];
-      if (query.from) {
-        parts.push('#dt >= :from');
-      }
-      if (query.to) {
-        parts.push('#dt <= :to');
-      }
-      params.KeyConditionExpression = parts.join(' AND ');
       params.ExpressionAttributeNames['#dt'] = 'datetime';
-      if (query.from) params.ExpressionAttributeValues[':from'] = query.from;
-      if (query.to) params.ExpressionAttributeValues[':to'] = query.to!.includes('T')
-        ? query.to
-        : `${query.to}T23:59:59`;
+
+      if (query.from && query.to) {
+        const toVal = query.to.includes('T') ? query.to : `${query.to}T23:59:59`;
+        params.KeyConditionExpression = '#status = :s AND #dt BETWEEN :from AND :to';
+        params.ExpressionAttributeValues[':from'] = query.from;
+        params.ExpressionAttributeValues[':to'] = toVal;
+      } else if (query.from) {
+        params.KeyConditionExpression = '#status = :s AND #dt >= :from';
+        params.ExpressionAttributeValues[':from'] = query.from;
+      } else {
+        const toVal = query.to!.includes('T') ? query.to! : `${query.to}T23:59:59`;
+        params.KeyConditionExpression = '#status = :s AND #dt <= :to';
+        params.ExpressionAttributeValues[':to'] = toVal;
+      }
     }
 
     const res = await ddb.send(new QueryCommand(params));
