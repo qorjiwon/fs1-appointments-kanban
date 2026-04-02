@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Appointment,
   AppointmentStatus,
@@ -18,6 +19,63 @@ interface DetailPanelProps {
   onError: (message: string) => void;
 }
 
+type TooltipPlacement = 'top' | 'bottom';
+
+function PortalTooltip({
+  content,
+  placement = 'top',
+  children,
+}: {
+  content?: string;
+  placement?: TooltipPlacement;
+  children: React.ReactNode;
+}) {
+  const id = useId();
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ left: number; top: number; width: number }>({ left: 0, top: 0, width: 0 });
+
+  const tooltip = useMemo(() => {
+    if (!content || !open) return null;
+
+    const top = placement === 'top' ? pos.top - 10 : pos.top + 10;
+    return (
+      <div
+        id={id}
+        className={`portal-tooltip ${placement}`}
+        style={{ left: pos.left, top, maxWidth: Math.min(360, Math.max(220, pos.width + 80)) }}
+        role="tooltip"
+      >
+        {content}
+      </div>
+    );
+  }, [content, open, placement, pos.left, pos.top, pos.width, id]);
+
+  const updatePosAndOpen = (nextOpen: boolean) => {
+    if (!content) return;
+    const el = wrapRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setPos({ left: rect.left + rect.width / 2, top: placement === 'top' ? rect.top : rect.bottom, width: rect.width });
+    setOpen(nextOpen);
+  };
+
+  return (
+    <div
+      ref={wrapRef}
+      className="portal-tooltip-anchor"
+      aria-describedby={content && open ? id : undefined}
+      onMouseEnter={() => updatePosAndOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      onFocus={() => updatePosAndOpen(true)}
+      onBlur={() => setOpen(false)}
+    >
+      {children}
+      {tooltip ? createPortal(tooltip, document.body) : null}
+    </div>
+  );
+}
+
 const FLOW_INDEX: Record<AppointmentStatus, number> = {
   requested: 0,
   confirmed: 1,
@@ -33,8 +91,11 @@ export function DetailPanel({ appointment, onClose, onTransition, onError }: Det
   const isCancelled = appointment.status === 'cancelled';
   const isTerminal = allowed.length === 0;
   const currentFlowIdx = FLOW_INDEX[appointment.status];
-  const nextSteps = allowed.filter((s) => s !== 'cancelled');
-  const canCancel = allowed.includes('cancelled');
+
+  const allowedLabels = allowed.map((s) => STATUS_LABELS[s]).join(', ');
+  const disabledTooltip = allowedLabels
+    ? `이 상태에서는 [${allowedLabels}]로만 전이 가능합니다.`
+    : '최종 상태이므로 전이할 수 없습니다.';
 
   const handleTransition = async (targetStatus: AppointmentStatus) => {
     try {
@@ -150,46 +211,76 @@ export function DetailPanel({ appointment, onClose, onTransition, onError }: Det
           </div>
 
           {/* Action Buttons */}
-          {!isTerminal && (
-            <div className="action-section">
-              <h3>다음 단계</h3>
-              <div className="action-buttons">
-                {nextSteps.map((targetStatus) => (
-                  <button
-                    key={targetStatus}
-                    className="action-btn primary-action"
-                    disabled={transitioning !== null}
-                    onClick={() => handleTransition(targetStatus)}
-                    style={{ '--action-color': STATUS_COLORS[targetStatus] } as React.CSSProperties}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                    {transitioning === targetStatus ? '처리 중...' : STATUS_ACTION_LABELS[targetStatus]}
-                  </button>
-                ))}
-                {canCancel && (
-                  <button
-                    className="action-btn cancel-action"
-                    disabled={transitioning !== null}
-                    onClick={() => handleTransition('cancelled')}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <circle cx="12" cy="12" r="10"/>
-                      <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-                    </svg>
-                    {transitioning === 'cancelled' ? '처리 중...' : '예약 취소'}
-                  </button>
-                )}
+          <div className="action-section">
+            <h3>예약 상태 변경</h3>
+
+            {isTerminal ? (
+              <div className="terminal-notice">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span>{isCancelled ? '취소된 예약은 상태를 변경할 수 없습니다.' : '완료된 예약은 상태를 변경할 수 없습니다.'}</span>
               </div>
-              {nextSteps.length > 0 && (
-                <p className="action-hint">
-                  현재 <strong>{STATUS_LABELS[appointment.status]}</strong> 상태입니다.
-                  {' '}{nextSteps.map((s) => STATUS_LABELS[s]).join(' 또는 ')}(으)로 변경할 수 있습니다.
-                </p>
-              )}
-            </div>
-          )}
+            ) : (
+              <>
+                <div className="status-flow-row" aria-label="예약 상태 흐름">
+                  {FLOW_STATUSES.map((status, idx) => {
+                    const isCurrent = status === appointment.status;
+                    const isAllowed = allowed.includes(status);
+                    const isClickable = !isCurrent && isAllowed && transitioning === null;
+                    const isDisabled = !isCurrent && (!isAllowed || transitioning !== null);
+                    const tooltip = isDisabled ? disabledTooltip : undefined;
+
+                    return (
+                      <React.Fragment key={status}>
+                        <PortalTooltip content={tooltip}>
+                          <button
+                            className={`flow-btn ${isCurrent ? 'current' : ''} ${isDisabled ? 'disabled' : ''}`}
+                            disabled={!isClickable}
+                            onClick={() => handleTransition(status)}
+                            style={{ '--action-color': STATUS_COLORS[status] } as React.CSSProperties}
+                            aria-current={isCurrent ? 'step' : undefined}
+                          >
+                            <span className="flow-dot" />
+                            <span className="flow-label">{STATUS_LABELS[status]}</span>
+                          </button>
+                        </PortalTooltip>
+                        {idx < FLOW_STATUSES.length - 1 && (
+                          <div className="flow-arrow" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                              <path d="M5 12h14"/><polyline points="12 5 19 12 12 19"/>
+                            </svg>
+                          </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+
+                  <PortalTooltip content={!allowed.includes('cancelled') ? disabledTooltip : undefined}>
+                    <button
+                      className="flow-btn cancel"
+                      disabled={transitioning !== null || !allowed.includes('cancelled')}
+                      onClick={() => handleTransition('cancelled')}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                      </svg>
+                      {transitioning === 'cancelled' ? '처리 중...' : '예약 취소'}
+                    </button>
+                  </PortalTooltip>
+                </div>
+
+                {allowed.filter((s) => s !== 'cancelled').length > 0 && (
+                  <p className="action-hint">
+                    현재 <strong>{STATUS_LABELS[appointment.status]}</strong> 상태입니다.
+                    {' '}{allowed.filter((s) => s !== 'cancelled').map((s) => STATUS_LABELS[s]).join(' 또는 ')}(으)로 변경할 수 있습니다.
+                  </p>
+                )}
+              </>
+            )}
+          </div>
 
           {/* Timeline */}
           <div className="history-section">

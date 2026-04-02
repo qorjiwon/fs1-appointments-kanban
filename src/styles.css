@@ -493,6 +493,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px;
+  overflow: visible;
 }
 
 .progress-section h3,
@@ -589,47 +590,121 @@ body {
 }
 
 /* ========== Action Buttons ========== */
-.action-buttons {
+.status-flow-row {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 10px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: visible;
 }
 
-.action-btn {
+.flow-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--action-color) 18%, var(--border));
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.flow-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+  border-color: color-mix(in srgb, var(--action-color) 35%, var(--border));
+}
+.flow-btn:disabled { cursor: not-allowed; }
+
+.flow-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--action-color, var(--primary));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--action-color) 16%, transparent);
+  flex-shrink: 0;
+}
+
+.flow-btn.current {
+  background: color-mix(in srgb, var(--action-color) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--action-color) 45%, var(--border));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--action-color) 14%, transparent);
+}
+
+.flow-btn.disabled {
+  opacity: 0.55;
+}
+.flow-btn.disabled .flow-dot {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+.flow-arrow {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.flow-btn.cancel {
+  border-color: #fecaca;
+  color: #ef4444;
+  background: #fff;
+}
+.flow-btn.cancel:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+.terminal-notice {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 18px;
-  border-radius: var(--radius);
+  padding: 14px 16px;
+  background: #f9fafb;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
   font-size: 14px;
+  font-weight: 500;
+}
+
+/* Tooltip (portal, shown outside panel) */
+.portal-tooltip-anchor {
+  display: inline-flex;
+}
+
+.portal-tooltip {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  background: #0f172a;
+  color: #f1f5f9;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-.action-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.action-btn.primary-action {
-  background: var(--action-color, var(--primary));
-  color: white;
-}
-.action-btn.primary-action:hover:not(:disabled) {
-  filter: brightness(1.08);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  line-height: 1.5;
+  text-align: center;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  pointer-events: none;
+  z-index: 10000;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
 }
 
-.action-btn.cancel-action {
-  background: transparent;
-  color: #ef4444;
-  border: 1.5px solid #fecaca;
-}
-.action-btn.cancel-action:hover:not(:disabled) {
-  background: #fef2f2;
-  border-color: #ef4444;
+.portal-tooltip.bottom {
+  transform: translate(-50%, 0);
 }
 
 .action-hint {
