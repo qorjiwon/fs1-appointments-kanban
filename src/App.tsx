@@ -16,7 +16,7 @@ import { EmptyState } from './components/EmptyState';
 
 export default function App() {
   const { filters, setFilters, clearFilters, hasActiveFilters } = useFilters();
-  const { appointments, loading, error, refetch, handleSSEEvent, updateAppointmentLocally } =
+  const { appointments, loading, error, refetch, handleRealtimeEvent, updateAppointmentLocally } =
     useAppointments(filters);
   const { toasts, addToast, removeToast } = useToast();
   const isOnline = useOnlineStatus();
@@ -36,15 +36,15 @@ export default function App() {
 
   const onRealtimeEvent = useCallback(
     (type: string, appointment: Appointment) => {
-      handleSSEEvent(type, appointment);
+      handleRealtimeEvent(type, appointment);
       if (selectedAppointment?.id === appointment.id) {
         setSelectedAppointment(appointment);
       }
     },
-    [handleSSEEvent, selectedAppointment?.id]
+    [handleRealtimeEvent, selectedAppointment?.id]
   );
 
-  const { status: sseStatus } = useWebSocket(onRealtimeEvent);
+  const { status: wsStatus } = useWebSocket(onRealtimeEvent);
 
   const handleTransition = useCallback(
     (updated: Appointment) => {
@@ -61,7 +61,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <ConnectionBanner sseStatus={sseStatus} isOnline={isOnline} />
+      <ConnectionBanner wsStatus={wsStatus} isOnline={isOnline} />
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
       <header className="app-header">

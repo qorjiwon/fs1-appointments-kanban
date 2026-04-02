@@ -39,7 +39,7 @@ export function useAppointments(filters: Filters) {
     fetchAppointments();
   }, [fetchAppointments]);
 
-  const handleSSEEvent = useCallback((_type: string, appointment: Appointment) => {
+  const handleRealtimeEvent = useCallback((_type: string, appointment: Appointment) => {
     setAppointments((prev) => {
       const idx = prev.findIndex((a) => a.id === appointment.id);
       if (idx >= 0) {
@@ -62,7 +62,7 @@ export function useAppointments(filters: Filters) {
     loading,
     error,
     refetch: fetchAppointments,
-    handleSSEEvent,
+    handleRealtimeEvent,
     updateAppointmentLocally,
   };
 }

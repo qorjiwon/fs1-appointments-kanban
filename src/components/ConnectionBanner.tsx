@@ -1,11 +1,11 @@
 import React from 'react';
 
 interface ConnectionBannerProps {
-  sseStatus: 'connecting' | 'connected' | 'disconnected';
+  wsStatus: 'connecting' | 'connected' | 'disconnected';
   isOnline: boolean;
 }
 
-export function ConnectionBanner({ sseStatus, isOnline }: ConnectionBannerProps) {
+export function ConnectionBanner({ wsStatus, isOnline }: ConnectionBannerProps) {
   if (!isOnline) {
     return (
       <div className="connection-banner offline">
@@ -14,7 +14,7 @@ export function ConnectionBanner({ sseStatus, isOnline }: ConnectionBannerProps)
     );
   }
 
-  if (sseStatus === 'connecting') {
+  if (wsStatus === 'connecting') {
     return (
       <div className="connection-banner connecting">
         실시간 연결 중...
@@ -22,7 +22,7 @@ export function ConnectionBanner({ sseStatus, isOnline }: ConnectionBannerProps)
     );
   }
 
-  if (sseStatus === 'disconnected') {
+  if (wsStatus === 'disconnected') {
     return (
       <div className="connection-banner disconnected">
         실시간 연결이 끊어졌습니다. 페이지를 새로고침해주세요.
