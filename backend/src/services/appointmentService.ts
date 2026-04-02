@@ -82,44 +82,6 @@ export interface TransitionResult {
   allowed_transitions?: AppointmentStatus[];
 }
 
-export function seedAppointments(): void {
-  if (appointments.size > 0) return;
-
-  const today = new Date();
-  const ymd = (d: Date) => d.toISOString().slice(0, 10);
-  const dt = (hour: number, min: number = 0) =>
-    new Date(today.getFullYear(), today.getMonth(), today.getDate(), hour, min).toISOString();
-
-  const seeds: {
-    patient_name: string;
-    treatment_type: string;
-    datetime: string;
-    targetStatuses: AppointmentStatus[];
-  }[] = [
-    { patient_name: '김민수', treatment_type: '스케일링', datetime: dt(9, 0), targetStatuses: [] },
-    { patient_name: '오태현', treatment_type: '크라운', datetime: dt(13, 0), targetStatuses: [] },
-    { patient_name: '이서연', treatment_type: '충치 치료', datetime: dt(9, 30), targetStatuses: ['confirmed'] },
-    { patient_name: '강예린', treatment_type: '미백', datetime: dt(13, 30), targetStatuses: ['confirmed'] },
-    { patient_name: '박준혁', treatment_type: '임플란트 상담', datetime: dt(10, 0), targetStatuses: ['confirmed', 'checked_in'] },
-    { patient_name: '윤승민', treatment_type: '신경 치료', datetime: dt(14, 0), targetStatuses: ['confirmed', 'checked_in'] },
-    { patient_name: '정하은', treatment_type: '교정 상담', datetime: dt(11, 0), targetStatuses: ['confirmed', 'checked_in', 'in_treatment'] },
-  ];
-
-  for (const seed of seeds) {
-    const apt = createAppointment({
-      patient_name: seed.patient_name,
-      datetime: seed.datetime,
-      treatment_type: seed.treatment_type,
-    });
-
-    for (const target of seed.targetStatuses) {
-      transitionAppointment(apt.id, target, '시스템');
-    }
-  }
-
-  console.log(`Seeded ${seeds.length} appointments`);
-}
-
 export function transitionAppointment(
   id: string,
   targetStatus: AppointmentStatus,

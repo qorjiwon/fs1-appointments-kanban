@@ -112,18 +112,6 @@ Resources:
             Path: /appointments/{id}/transition
             Method: PATCH
 
-  SeedAppointmentsFunction:
-    Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
-    Properties:
-      FunctionName: inspline-seed-appointments
-      CodeUri: .
-      Handler: dist/lambda/seedAppointments.handler
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref AppointmentsTable
-
   WebSocketConnectFunction:
     Type: AWS::Serverless::Function
     Metadata:
