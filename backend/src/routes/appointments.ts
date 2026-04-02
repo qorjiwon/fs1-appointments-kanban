@@ -6,6 +6,7 @@ import {
   transitionAppointment,
 } from '../services/appointmentService';
 import { AppointmentStatus } from '../models/appointment';
+import { broadcastAppointmentEvent } from '../websocket/localWsServer';
 
 const router = Router();
 
@@ -24,6 +25,7 @@ router.post('/', (req: Request, res: Response) => {
   }
 
   const appointment = createAppointment({ patient_name, datetime, treatment_type });
+  broadcastAppointmentEvent('appointment_created', appointment);
   res.status(201).json({ appointment_id: appointment.id, ...appointment });
 });
 
@@ -85,6 +87,9 @@ router.patch('/:id/transition', (req: Request<{ id: string }>, res: Response) =>
     return;
   }
 
+  if (result.appointment) {
+    broadcastAppointmentEvent('appointment_updated', result.appointment);
+  }
   res.json(result.appointment);
 });
 
