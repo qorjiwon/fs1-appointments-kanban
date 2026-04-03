@@ -115,3 +115,9 @@ export function transitionAppointment(
 
   return { success: true, appointment };
 }
+
+export function deleteAllAppointments(): number {
+  const n = appointments.size;
+  appointments.clear();
+  return n;
+}

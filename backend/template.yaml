@@ -65,6 +65,7 @@ Resources:
           - GET
           - POST
           - PATCH
+          - DELETE
         AllowHeaders:
           - '*'
 
@@ -111,6 +112,12 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /appointments/{id}/transition
             Method: PATCH
+        DeleteAllAppointments:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /appointments/all
+            Method: DELETE
 
   WebSocketConnectFunction:
     Type: AWS::Serverless::Function

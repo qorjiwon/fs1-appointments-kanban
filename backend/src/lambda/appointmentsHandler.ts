@@ -2,6 +2,7 @@ import { APIGatewayProxyHandlerV2 } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
 import {
   createAppointmentDdb,
+  deleteAllAppointmentsDdb,
   getAppointmentDdb,
   listAppointmentsDdb,
   transitionAppointmentDdb,
@@ -65,6 +66,14 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       return {
         statusCode: 201,
         body: JSON.stringify({ appointment_id: appointment.id, ...appointment }),
+      };
+    }
+
+    if (method === 'DELETE' && path === '/appointments/all') {
+      const deleted = await deleteAllAppointmentsDdb();
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ deleted }),
       };
     }
 

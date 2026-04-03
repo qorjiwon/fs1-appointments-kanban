@@ -2,6 +2,7 @@ import {
   DynamoDBClient,
 } from '@aws-sdk/client-dynamodb';
 import {
+  BatchWriteCommand,
   DynamoDBDocumentClient,
   PutCommand,
   GetCommand,
@@ -156,6 +157,46 @@ export async function listAppointmentsDdb(query: ListAppointmentsQuery): Promise
     page,
     limit,
   };
+}
+
+export async function deleteAllAppointmentsDdb(): Promise<number> {
+  let deleted = 0;
+  let startKey: Record<string, unknown> | undefined;
+
+  for (;;) {
+    const page = await ddb.send(
+      new ScanCommand({
+        TableName: TABLE,
+        ProjectionExpression: '#id',
+        ExpressionAttributeNames: { '#id': 'id' },
+        ExclusiveStartKey: startKey,
+      })
+    );
+
+    const items = page.Items ?? [];
+    for (let i = 0; i < items.length; i += 25) {
+      const chunk = items.slice(i, i + 25);
+      let requestItems: Record<string, { DeleteRequest: { Key: { id: string } } }[]> = {
+        [TABLE]: chunk.map((item) => ({
+          DeleteRequest: { Key: { id: (item as { id: string }).id } },
+        })),
+      };
+
+      while (Object.keys(requestItems).length > 0) {
+        const out = await ddb.send(new BatchWriteCommand({ RequestItems: requestItems }));
+        requestItems = (out.UnprocessedItems as typeof requestItems) ?? {};
+        if (Object.keys(requestItems).length > 0) {
+          await new Promise((r) => setTimeout(r, 200));
+        }
+      }
+      deleted += chunk.length;
+    }
+
+    startKey = page.LastEvaluatedKey as Record<string, unknown> | undefined;
+    if (!startKey) break;
+  }
+
+  return deleted;
 }
 
 export interface TransitionResult {

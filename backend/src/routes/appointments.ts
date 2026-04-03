@@ -4,6 +4,7 @@ import {
   listAppointments,
   getAppointment,
   transitionAppointment,
+  deleteAllAppointments,
 } from '../services/appointmentService';
 import { AppointmentStatus } from '../models/appointment';
 import { broadcastAppointmentEvent } from '../websocket/localWsServer';
@@ -52,6 +53,11 @@ router.get('/', (req: Request, res: Response) => {
   });
 
   res.json(result);
+});
+
+router.delete('/all', (_req: Request, res: Response) => {
+  const deleted = deleteAllAppointments();
+  res.json({ deleted });
 });
 
 router.get('/:id', (req: Request<{ id: string }>, res: Response) => {
