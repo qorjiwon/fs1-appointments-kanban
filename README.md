@@ -10,9 +10,10 @@
 
 ### 시스템 아키텍처
 
-[`docs/sys_architecture.png`](docs/sys_architecture.png) — draw.io로 작성한 전체 구성도(PNG)입니다.
+<img width="700" alt="system architecture" src="https://github.com/user-attachments/assets/4826dfee-bd75-4d02-bd8a-fb214807223f" />
 
-### 텍스트 다이어그램 (요약)
+
+### 텍스트 다이어그램
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
