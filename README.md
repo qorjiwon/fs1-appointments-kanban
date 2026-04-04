@@ -303,11 +303,15 @@ HTTP 요청 → Lambda 처리 → DynamoDB 저장 → broadcastAppointmentEventS
 3. **액세스 키 발급**: IAM 사용자로 **Access Key / Secret Access Key**를 발급합니다.
 4. **AWS CLI 설정**: `aws configure`로 위 키와 리전(`ap-northeast-2`)을 설정합니다.
 
+<img width="1409" height="730" alt="Screenshot 2026-04-04 at 12 26 08 pm" src="https://github.com/user-attachments/assets/87ae8066-caf6-4ca7-93cd-8d70dcef7a1f" />
+
 ### 예산 알림 설정
 
 1. 콘솔에서 **Billing and Cost Management** → **Budgets**로 이동합니다.
 2. **월 $1** 예산을 만들고, 임계값 알림을 1%($0.01)로 설정합니다.
 3. **Budget actions**(콘솔의 **예산 작업**)은 따로 추가하지 않습니다.
+
+<img width="1402" height="201" alt="Screenshot 2026-04-04 at 12 24 35 pm" src="https://github.com/user-attachments/assets/e231a204-c6bc-40db-b442-cb77b039d9c8" />
 
 ### 사용한 AWS 리소스
 
@@ -399,10 +403,12 @@ KeyConditionExpression: '#status <> :x'
 ## 무료 크레딧 · Code Agent Plan 활용 내역
 
 ### 무료 크레딧
-
-
+<img width="1391" height="507" alt="Screenshot 2026-04-04 at 12 23 26 pm" src="https://github.com/user-attachments/assets/904d06da-aa7a-415f-b61d-eda07abedd5e" />
 
 ### Code Agent Plan
+
+<img width="1086" height="521" alt="Screenshot 2026-04-04 at 12 22 21 pm" src="https://github.com/user-attachments/assets/30a88be5-b7d2-4b27-b5ae-d794f3c9fb7e" />
+
 
 ---
 
