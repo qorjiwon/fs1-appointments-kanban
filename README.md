@@ -114,22 +114,6 @@
 
 - **Cursor IDE** (에디터 + AI 에이전트·채팅·인라인 편집)
 
-
----
-
-## 주요 기능
-
-1. **칸반 보드** — 6개 상태 열(requested~cancelled)에 예약 카드 표시
-2. **상세 패널** — 카드 클릭 시 예약 정보 + 전이 이력 타임라인
-3. **규칙 기반 상태 전이** — 허용된 전이만 버튼 활성화, 불가능한 전이에 안내
-4. **낙관적 잠금** — DynamoDB `ConditionExpression`으로 동시 수정 충돌 감지 (409)
-5. **실시간 갱신** — WebSocket으로 다른 클라이언트의 변경사항 즉시 반영
-6. **자동 재연결** — 연결 끊김 시 최대 3회 지수 백오프 (1s → 2s → 4s)
-7. **필터 + URL 동기화** — 상태/날짜/환자명 필터가 URL 쿼리파라미터에 반영
-8. **예약 생성** — 모달을 통한 새 예약 등록
-9. **에러 처리** — 토스트 알림 (3초 자동소멸), 오프라인 배너
-10. **빈 상태 UI** — 예약이 없을 때 안내 일러스트
-
 ---
 
 ## 아키텍처 결정 이유
@@ -341,45 +325,43 @@ HTTP 요청 → Lambda 처리 → DynamoDB 저장 → broadcastAppointmentEventS
 
 ---
 
-## 2. 배포
+## 직접 수정·운영한 부분
 
-### 백엔드 (AWS SAM)
+- **AWS 계정·접근 관리**
+  - 루트 사용자로 AWS 계정을 생성하고 결제 수단을 등록했습니다.
+  - IAM 사용자를 생성해 배포 권한을 부여했습니다.
+    - 개인 프로젝트 환경에서는 `AdministratorAccess` 권한을 사용했습니다.
+    - 액세스 키 발급 후 `aws configure`로 자격 증명과 리전(`ap-northeast-2`)을 설정했습니다.
 
-```bash
-cd backend
-sam build          # TypeScript 컴파일 + Lambda 아티팩트 준비
-sam deploy         # CloudFormation으로 AWS 리소스 배포
-```
+- **예산 알림 설정**
+  - AWS Budgets에서 월 **$1** 예산을 생성했습니다.
+  - 임계값 **1% ($0.01)** 기준 알림을 설정했습니다.
+  - Budget Actions는 적용하지 않고 비용 모니터링 용도로만 사용했습니다.
 
-SAM 설정 (`samconfig.toml`):
+- **백엔드 배포**
+  - AWS SAM 기반으로 배포 설정을 구성했습니다.
+  - `sam build`, `sam deploy`로 CloudFormation 스택을 직접 배포했습니다.
+  - 배포 과정에서 충돌 리소스나 잔여 스택이 발생하면 콘솔에서 직접 확인하고 정리했습니다.
 
-```toml
-stack_name = "fs-1-backend"
-region = "ap-northeast-2"
-capabilities = "CAPABILITY_IAM"
-resolve_s3 = true
-```
+- **프론트엔드 배포 및 환경 변수**
+  - Vercel에서 `frontend` 디렉터리를 기준으로 Vite 프로젝트를 배포했습니다.
+  - `VITE_API_URL`, `VITE_WS_URL`을 환경 변수로 설정해 API Gateway와 연동했습니다.
 
-### 프론트엔드 (Vercel)
-
-1. Vercel 대시보드에서 Git 저장소 Import
-2. Root Directory: `frontend`
-3. Framework Preset: Vite
-4. 환경 변수 설정:
-   - `VITE_API_URL`: API Gateway HTTP API URL
-   - `VITE_WS_URL`: API Gateway WebSocket URL
+- **문서화**
+  - README와 시스템 아키텍처 문서를 정리해 구성, 배포, 운영 과정을 명확히 기록했습니다.
 
 ---
 
-## 3. 배포 중 만난 문제와 해결 과정
+## 배포 중 만난 문제와 해결 과정
 
-### 문제 1: 배포 후 API 404 (환경 변수·URL)
+### 문제 1: 배포 후 API 404 (Invoke URL·Lambda path)
 
-**증상**: 배포 후 브라우저에서 API 호출이 404로 떨어짐
+**증상**: 프론트에서 API 호출 시 404가 발생하였습니다.
 
-**원인**: **`VITE_API_URL`** 을 잡을 때 **스테이지 prefix**(예: `/prod`)를 **포함한 채로** 넣어 두고 요청을 보내, 최종 URL이 게이트웨이·Lambda가 기대하는 경로와 맞지 않았습니다.
+**원인**: HTTP API 스테이지가 `prod`인 경우 Invoke URL에 `/prod`가 포함됩니다. `VITE_API_URL` 등에서 해당 접두가 빠지면 `…/appointments`만 호출되어 게이트웨이 라우트와 불일치합니다. 또한 Lambda 이벤트의 path에 `/prod/appointments`처럼 스테이지가 붙어 오면 핸들러가 기대하는 `/appointments` 분기와 맞지 않을 수 있습니다. 출력값과 다른 API ID·리전·이중 `/prod`도 동일 증상을 유발합니다.
 
-**해결**: Vercel **환경 변수 설정에서 스테이지 prefix를 직접 제거**했습니다.
+**해결**: **`appointmentsHandler`의 `normalizeHttpPath`에서 `requestContext.stage`에 해당하는 접두 또는 `/prod` prefix를 path에서 제거**하여 `/appointments` 기준 라우팅과 일치시켰습니다. 클라이언트는 API Gateway Invoke URL 형식을 따라 `sam deploy` 출력 **`HttpApiUrl`**·**`WebSocketUrl`** 을 각각 **`VITE_API_URL`**·**`VITE_WS_URL`** 에 반영한 뒤 프론트를 재배포하였습니다(Vite 빌드 시 env 고정). Network에서 요청 URL이 `…/prod/…` 형태인지 확인하였습니다.
+
 
 ---
 
@@ -405,12 +387,22 @@ KeyConditionExpression: '#status <> :x'
 
 **증상**: `sam deploy`가 **초기 검증(Early Validation)** 단계에서 막히거나, 리소스 생성 단계에서 이름 충돌로 실패하는 경우가 있었습니다.
 
-**원인**: `template.yaml`에 **물리 리소스 이름이 고정 문자열**로 박혀 있었습니다. (예: 테이블·함수·WebSocket API 등 — `Appointments`, `Connections`, `inspline-appointments`, `inspline-seed-appointments`, `inspline-ws-connect`, `inspline-ws-disconnect`, `inspline-ws` 등.) 로컬에서 YAML을 수정·삭제했는지와 별개로, **이전 배포 실패의 잔여물이나 수동으로 만든 동일 이름 리소스**가 계정에 남아 있으면 CloudFormation이 새로 만들지 못하고 실패할 수 있습니다.
+**원인**: `template.yaml`에 **물리 리소스 이름이 고정 문자열**로 박혀 있었습니다.로컬에서 YAML을 수정·삭제했는지와 별개로, **이전 배포 실패의 잔여물이나 수동으로 만든 동일 이름 리소스**가 계정에 남아 있으면 CloudFormation이 새로 만들지 못하고 실패할 수 있습니다.
 
 **이 과정에서 정리한 점**
 
 - 템플릿만 볼 것이 아니라 **AWS 콘솔에서 동일 이름의 리소스·남은 스택**이 있는지 함께 봐야 합니다.
 - 고정 이름을 유지할 거면 배포 전에 **충돌 나는 리소스를 정리**하거나, 스택/리소스 이름 규칙을 바꿔 **이름 충돌이 나지 않게** 맞춥니다.
+
+---
+
+## 무료 크레딧 · Code Agent Plan 활용 내역
+
+### 무료 크레딧
+
+
+
+### Code Agent Plan
 
 ---
 
