@@ -2,8 +2,6 @@
 
 치과 예약 시스템의 **관리자 대시보드**입니다. 칸반 보드에서 예약을 실시간으로 모니터링하고 관리할 수 있습니다.
 
-**배포된 페이지 바로가기:** [https://fs1-appointments-kanban.vercel.app/](https://fs1-appointments-kanban.vercel.app/)
-
 ---
 
 ## 아키텍처 다이어그램
@@ -90,7 +88,7 @@
 
 비교적 작은 규모의 프로젝트이고, 처음 Opus 4.6으로 환경 세팅·보일러플레이트·핵심 API까지 잡았을 때 한 번에 나온 결과가 충분히 좋았습니다. 그래서 이후에는 Auto 모드만으로도 빠르게 UI·문서·자잘한 수정을 이어갈 수 있었고, Sonnet은 사용하지 않았습니다.
 
-### 이 프로젝트에서 AI가 맡은 개발 범위 (사실상 전부)
+### AI가 맡은 개발 범위
 
 - **프론트엔드**: Vite + React + TypeScript 구조, 칸반 UI·상세 패널·필터·URL 동기화, WebSocket 훅·재연결, API 연동, 에러/빈 상태 UI 등
 - **백엔드**: Express 로컬 경로, Lambda 핸들러(HTTP·WebSocket connect/disconnect), DynamoDB 리포지토리·GSI 조회 로직, 상태 머신·낙관적 잠금·브로드캐스트
